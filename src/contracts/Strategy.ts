@@ -44,6 +44,13 @@ export class StrategyFactory {
     this.contract = new ethers.Contract(address, StrategyFactoryABI, signer);
   }
 
+  /**
+   * Call static to get the address of the deployed strategy without emitting a transaction.
+   */
+  async callStaticDeployStrategy(asset: string, targetAPY: number, lockupPeriod: number): Promise<string> {
+    return await this.contract.callStatic.deployStrategy(asset, targetAPY, lockupPeriod);
+  }
+
   async deployStrategy(asset: string, targetAPY: number, lockupPeriod: number): Promise<ethers.ContractTransaction> {
     return await this.contract.deployStrategy(asset, targetAPY, lockupPeriod);
   }

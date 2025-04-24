@@ -6,18 +6,22 @@ dotenv.config();
 
 // Check if we're in test mode (no database required)
 const isTestMode = process.env.NODE_ENV === 'test';
+const memoryStore = new Map<string, any>();
 
 export const connectDatabase = async (): Promise<DataSource> => {
   try {
     if (isTestMode) {
-      console.log('Running in test mode - skipping database connection');
-      // Return a mock DataSource for testing
+      console.log('Running in test mode - using in-memory repository');
       return {
         getRepository: () => ({
-          findOneBy: async () => null,
-          save: async (entity: any) => entity
-        }),
-        // Add other required methods/properties as needed
+          async findOneBy(criteria: { id: string }) {
+            return memoryStore.get(criteria.id) || null;
+          },
+          async save(entity: any) {
+            memoryStore.set(entity.id, entity);
+            return entity;
+          }
+        })
       } as any as DataSource;
     }
 
@@ -39,14 +43,17 @@ export const connectDatabase = async (): Promise<DataSource> => {
   } catch (error) {
     console.error('Database connection failed:', error);
     if (isTestMode) {
-      console.log('Continuing in test mode without database');
-      // Return a mock DataSource for testing
+      console.log('Continuing in test mode - using in-memory repository');
       return {
         getRepository: () => ({
-          findOneBy: async () => null,
-          save: async (entity: any) => entity
-        }),
-        // Add other required methods/properties as needed
+          async findOneBy(criteria: { id: string }) {
+            return memoryStore.get(criteria.id) || null;
+          },
+          async save(entity: any) {
+            memoryStore.set(entity.id, entity);
+            return entity;
+          }
+        })
       } as any as DataSource;
     }
     throw error;

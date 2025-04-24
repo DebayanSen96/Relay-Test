@@ -35,6 +35,7 @@ export class FarmController {
         creatorAddress
       });
 
+      console.log('[CONTROLLER] Responding with requestId:', farmRequest.id, 'and status:', farmRequest.status);
       res.status(201).json({
         requestId: farmRequest.id,
         status: farmRequest.status

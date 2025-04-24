@@ -16,7 +16,26 @@ export class BlockchainService {
   private strategyFactories: Map<string, StrategyFactory> = new Map();
 
   constructor(private contractDeployer: ContractDeployer) {
+    // Create provider and disable ENS resolution
     this.provider = new ethers.providers.JsonRpcProvider(process.env.RPC_ENDPOINT);
+
+    // Override ENS methods to prevent ENS lookups
+    const originalGetResolver = this.provider.getResolver.bind(this.provider);
+    this.provider.getResolver = async (name: string) => {
+      // If it's an address, skip ENS
+      if (ethers.utils.isAddress(name)) {
+        return null;
+      }
+      return originalGetResolver(name);
+    };
+    const originalResolveName = this.provider.resolveName.bind(this.provider);
+    this.provider.resolveName = async (name: string) => {
+      if (ethers.utils.isAddress(name)) {
+        return name;
+      }
+      return originalResolveName(name);
+    };
+
     this.signer = new ethers.Wallet(process.env.PRIVATE_KEY!, this.provider);
     
     // Get deployed contract addresses
@@ -56,13 +75,12 @@ export class BlockchainService {
     const targetAPY = parseInt(parameters.targetAPY) || 0;
     const lockupPeriod = (parameters.lockupPeriodDays || 0) * 86400; // Convert days to seconds
 
+    // Determine deployed strategy address via static call to avoid relying on event logs
+    const deployedStrategyAddress = await factory.callStaticDeployStrategy(asset, targetAPY, lockupPeriod);
+    // Execute the deployment transaction
     const tx = await factory.deployStrategy(asset, targetAPY, lockupPeriod);
-    const receipt = await tx.wait();
+    await tx.wait();
 
-    // In a real implementation, we would extract the deployed strategy address from the event logs
-    // For now, we'll just use a placeholder
-    const deployedStrategyAddress = receipt.logs[0].address;
-    
     // Initialize the strategy with additional parameters if needed
     const strategy = new Strategy(deployedStrategyAddress, this.signer);
     await (await strategy.initialize(asset, targetAPY, lockupPeriod)).wait();
@@ -119,6 +137,15 @@ export class BlockchainService {
   ): Promise<string> {
     // Get DXP token address from deployed contracts
     const dxpTokenAddress = this.contractDeployer.getDeployedContracts().DXP_TOKEN_ADDRESS;
+
+    // If a pool already exists for this token pair and fee, return it
+    const existingPool = await this.uniswapV3Factory.getPool(dxpTokenAddress, principalAssetAddress, feeTier);
+    if (existingPool && existingPool !== ethers.constants.AddressZero) {
+      console.log('Uniswap V3 pool already exists at:', existingPool);
+      return existingPool;
+    }
+
+    console.log('Creating Uniswap V3 pool with tokens:', { dxpTokenAddress, principalAssetAddress, feeTier });
     const tx = await this.uniswapV3Factory.createPool(
       dxpTokenAddress,
       principalAssetAddress,

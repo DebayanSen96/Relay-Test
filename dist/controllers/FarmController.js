@@ -1,0 +1,84 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.FarmController = void 0;
+const FarmService_1 = require("../services/FarmService");
+const express_validator_1 = require("express-validator");
+class FarmController {
+    constructor(dataSource) {
+        this.createFarmRequest = async (req, res) => {
+            console.log('[CONTROLLER] createFarmRequest entered.');
+            try {
+                // Check for validation errors
+                const errors = (0, express_validator_1.validationResult)(req);
+                if (!errors.isEmpty()) {
+                    res.status(400).json({ errors: errors.array() });
+                    return;
+                }
+                // Extract creator address from authentication
+                // In a real implementation, this would come from JWT or wallet signature
+                const creatorAddress = req.headers['x-creator-address'];
+                if (!creatorAddress) {
+                    res.status(401).json({ error: 'Authentication required' });
+                    return;
+                }
+                // Create farm request
+                const farmRequest = await this.farmService.createFarmRequest({
+                    ...req.body,
+                    creatorAddress
+                });
+                console.log('[CONTROLLER] Responding with requestId:', farmRequest.id, 'and status:', farmRequest.status);
+                res.status(201).json({
+                    requestId: farmRequest.id,
+                    status: farmRequest.status
+                });
+            }
+            catch (error) {
+                console.error('Error creating farm request:', error);
+                res.status(500).json({
+                    error: error.message || 'Internal server error'
+                });
+            }
+        };
+        this.deployFarm = async (req, res) => {
+            try {
+                const { requestId } = req.params;
+                // In a real implementation, we would check if the user has admin privileges
+                // For now, we'll just proceed with the deployment
+                // Deploy the farm
+                const farmRequest = await this.farmService.deployFarm(requestId);
+                res.status(200).json({
+                    status: 'success',
+                    farmId: farmRequest.farmId,
+                    farmAddress: farmRequest.farmAddress,
+                    poolAddress: farmRequest.poolAddress
+                });
+            }
+            catch (error) {
+                console.error('Error deploying farm:', error);
+                res.status(500).json({
+                    error: error.message || 'Internal server error'
+                });
+            }
+        };
+        this.getFarmRequest = async (req, res) => {
+            try {
+                const { requestId } = req.params;
+                // In a real implementation, we would fetch the farm request from the database
+                // For now, we'll just return a placeholder response
+                res.status(200).json({
+                    requestId,
+                    status: 'PENDING_DEPLOYMENT',
+                    message: 'This is a placeholder response. In a real implementation, we would fetch the farm request from the database.'
+                });
+            }
+            catch (error) {
+                console.error('Error getting farm request:', error);
+                res.status(500).json({
+                    error: error.message || 'Internal server error'
+                });
+            }
+        };
+        this.farmService = new FarmService_1.FarmService(dataSource);
+    }
+}
+exports.FarmController = FarmController;

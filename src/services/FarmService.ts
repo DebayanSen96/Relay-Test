@@ -1,4 +1,5 @@
 import { Repository, DataSource } from 'typeorm';
+import { v4 as uuidv4 } from 'uuid';
 import { FarmRequest, FarmRequestStatus, StrategyType } from '../models/FarmRequest';
 import { BlockchainService } from './BlockchainService';
 import { IPFSService } from './IPFSService';
@@ -54,6 +55,7 @@ export class FarmService {
 
     // Create a new farm request
     const farmRequest = new FarmRequest();
+    farmRequest.id = uuidv4();
     farmRequest.farmName = data.farmName;
     farmRequest.farmDescription = data.farmDescription;
     farmRequest.farmLogoUrl = data.farmLogoUrl || null;
@@ -70,7 +72,9 @@ export class FarmService {
     farmRequest.status = FarmRequestStatus.PENDING_DEPLOYMENT;
 
     // Save the farm request to the database
-    return await this.farmRequestRepository.save(farmRequest);
+    const saved = await this.farmRequestRepository.save(farmRequest);
+    console.log('[SERVICE] Saved FarmRequest with id:', saved.id);
+    return saved;
   }
 
   async deployFarm(requestId: string): Promise<FarmRequest> {
