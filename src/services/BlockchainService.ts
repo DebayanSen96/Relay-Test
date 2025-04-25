@@ -81,7 +81,7 @@ export class BlockchainService {
     const tx = await factory.deployStrategy(asset, targetAPY, lockupPeriod);
     await tx.wait();
 
-    // Initialize the strategy with additional parameters if needed
+    // Initialize the strategy with additonal parameters if needed
     const strategy = new Strategy(deployedStrategyAddress, this.signer);
     await (await strategy.initialize(asset, targetAPY, lockupPeriod)).wait();
 
