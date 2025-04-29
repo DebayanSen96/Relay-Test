@@ -90,7 +90,7 @@ This document outlines the detailed workflow for creating a new Farm (DeFi Strat
 ### Step 3: Deployment Trigger (Manual/Admin or Automated)
 
 *   **Action:** An authorized process (e.g., an admin clicking 'Deploy' in a dashboard, or an automated queue processor) triggers the deployment for an approved request.
-*   **Endpoint:** `POST /api/v1/farms/deploy/{requestId}`
+*   **Endpoint:** `GET /api/v1/farms/deploy/{requestId}`
 *   **Authentication:** Requires admin/backend credentials.
 
 ### Step 4: Backend Deployment Processing

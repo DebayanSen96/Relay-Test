@@ -17,7 +17,7 @@ export const initFarmRoutes = (dataSource: DataSource) => {
   router.post('/requests', validateFarmRequest, handleValidationErrors, farmController.createFarmRequest);
   
   // Deploy a farm
-  router.post('/deploy/:requestId', /* Add validation if needed */ handleValidationErrors, farmController.deployFarm);
+  router.get('/deploy/:requestId', /* Add validation if needed */ handleValidationErrors, farmController.deployFarm);
   
   // Get farm request details
   router.get('/requests/:requestId', /* Add validation if needed */ handleValidationErrors, farmController.getFarmRequest);

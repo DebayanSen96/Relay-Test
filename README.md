@@ -107,7 +107,7 @@ Request body example:
 ### Deploy Farm
 
 ```
-POST /api/v1/farms/deploy/:requestId
+GET /api/v1/farms/deploy/:requestId
 ```
 
 ### Get Farm Request
