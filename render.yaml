@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: farm-deployment-service
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Add references to your environment group here
+      - key: RPC_ENDPOINT
+        sync: false
+      - key: PROTOCOL_FARM_CREATION_ADDRESS
+        sync: false
+      - key: DXP_TOKEN_ADDRESS
+        sync: false
+      - key: UNISWAP_V3_FACTORY_ADDRESS
+        sync: false
+      - key: LIQUIDITY_MANAGER_ADDRESS
+        sync: false
+      # Database configuration - use environment group or Render PostgreSQL service
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_DATABASE
+        sync: false
+      # IPFS configuration
+      - key: IPFS_API_URL
+        sync: false
+      - key: IPFS_GATEWAY_URL
+        sync: false
+      - key: API_TOKEN
+        sync: false
