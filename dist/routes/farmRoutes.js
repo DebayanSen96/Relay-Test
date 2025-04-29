@@ -15,7 +15,7 @@ const initFarmRoutes = (dataSource) => {
     // Create a new farm request
     router.post('/requests', validation_1.validateFarmRequest, handleValidation_1.handleValidationErrors, farmController.createFarmRequest);
     // Deploy a farm
-    router.post('/deploy/:requestId', /* Add validation if needed */ handleValidation_1.handleValidationErrors, farmController.deployFarm);
+    router.get('/deploy/:requestId', /* Add validation if needed */ handleValidation_1.handleValidationErrors, farmController.deployFarm);
     // Get farm request details
     router.get('/requests/:requestId', /* Add validation if needed */ handleValidation_1.handleValidationErrors, farmController.getFarmRequest);
     // Add a health check endpoint
