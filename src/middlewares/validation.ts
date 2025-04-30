@@ -12,19 +12,9 @@ export const validateFarmRequest = [
     .notEmpty()
     .withMessage('Farm description is required'),
   
-  body('principalAssetAddress')
-    .isString()
-    .matches(/^0x[a-fA-F0-9]{40}$/)
-    .withMessage('Valid principal asset address is required'),
-  
   body('strategyType')
     .isIn(Object.values(StrategyType))
     .withMessage('Valid strategy type is required'),
-  
-  body('strategyContractAddress')
-    .optional({ nullable: true })
-    .matches(/^0x[a-fA-F0-9]{40}$/)
-    .withMessage('Strategy contract address must be a valid Ethereum address'),
   
   body('parameters')
     .isObject()

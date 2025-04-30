@@ -56,12 +56,14 @@ const FarmSchema: Schema = new Schema(
     },
     farmAddress: {
       type: String,
-      required: true,
+      required: false,
+      default: "",
       index: true,         // Index for faster queries by address
     },
     poolAddress: {
       type: String,
-      required: true,
+      required: false,
+      default: "",
     },
     farmId: {
       type: String,
@@ -70,7 +72,8 @@ const FarmSchema: Schema = new Schema(
     },
     principalAssetAddress: {
       type: String,
-      required: true,
+      required: false,
+      default: "",
     },
     strategyType: {
       type: String,
@@ -78,7 +81,8 @@ const FarmSchema: Schema = new Schema(
     },
     strategyContractAddress: {
       type: String,
-      default: null,
+      required: false,
+      default: "",
     },
     parameters: {
       type: Object,

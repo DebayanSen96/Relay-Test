@@ -26,9 +26,9 @@ export class FarmService {
     farmName: string;
     farmDescription: string;
     farmLogoUrl?: string;
-    principalAssetAddress: string;
+    principalAssetAddress?: string; // Made optional
     strategyType: StrategyType;
-    strategyContractAddress?: string;
+    strategyContractAddress?: string; // Already optional
     parameters: Record<string, any>;
     incentiveSplits: {
       lp: number;
@@ -60,9 +60,9 @@ export class FarmService {
     farmRequest.farmName = data.farmName;
     farmRequest.farmDescription = data.farmDescription;
     farmRequest.farmLogoUrl = data.farmLogoUrl || null;
-    farmRequest.principalAssetAddress = data.principalAssetAddress;
+    farmRequest.principalAssetAddress = ""; // Initialize with empty string, will be set later
     farmRequest.strategyType = data.strategyType;
-    farmRequest.strategyContractAddress = data.strategyContractAddress || null;
+    farmRequest.strategyContractAddress = ""; // Initialize with empty string, will be set later
     farmRequest.parameters = data.parameters;
     farmRequest.incentiveSplits = data.incentiveSplits;
     farmRequest.maturityPeriodDays = data.maturityPeriodDays;
@@ -85,17 +85,17 @@ export class FarmService {
       throw new Error(`Farm request with ID ${requestId} not found`);
     }
 
-    // Generate salt for deterministic deployment
+
     const salt = this.blockchainService.generateSalt(farmRequest.creatorAddress, farmRequest.id);
     farmRequest.salt = salt;
     await this.farmRequestRepository.save(farmRequest);
 
     try {
-      // Step 1: Determine the strategy address to use
+      
       let strategyAddressToUse: string;
 
       if (farmRequest.strategyType !== StrategyType.CUSTOM) {
-        // Deploy a new strategy contract
+       
         const deployedStrategyAddress = await this.blockchainService.deployStrategy(
           farmRequest.strategyType,
           farmRequest.principalAssetAddress,
@@ -157,7 +157,7 @@ export class FarmService {
       farmRequest.status = FarmRequestStatus.READY;
       farmRequest.deploymentData = {
         deployedAt: new Date().toISOString(),
-        transactionHash: 'tx_hash_placeholder' // In a real implementation, we would store the transaction hash
+        transactionHash: 'tx_hash_placeholder' // Dummy for now
       };
       
       // Save farm data to MongoDB with the expanded schema
@@ -194,10 +194,8 @@ export class FarmService {
       throw new Error(`Incentive splits must sum to 100, got ${totalSplit}`);
     }
 
-    // Validate strategy type and address
-    if (data.strategyType === StrategyType.CUSTOM && !data.strategyContractAddress) {
-      throw new Error('Custom strategy type requires a strategy contract address');
-    }
+    // Strategy validation will be done in a later step
+    // We've removed the validation for strategy contract address as it will be set later
 
     // Additional validations can be added here based on specific requirements
   }

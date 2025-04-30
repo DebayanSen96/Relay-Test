@@ -1,4 +1,6 @@
 import { FarmService as MongoFarmService, ICreateFarmData } from '../db/services/farmService';
+import { Farm, IFarm } from '../db/models/Farm';
+import mongoose from 'mongoose';
 import { FarmRequest } from '../models/FarmRequest';
 
 /**
@@ -6,6 +8,122 @@ import { FarmRequest } from '../models/FarmRequest';
  * This is separate from the main FarmService to avoid conflicts
  */
 export class MongoFarmDataService {
+  /**
+   * Store initial farm data in MongoDB without strategy and principal asset addresses
+   * @param data - The initial farm data
+   * @returns Promise that resolves with the MongoDB document ID or null if duplicate
+   */
+  static async storeInitialFarmData(data: {
+    farmName: string;
+    farmDescription: string;
+    farmLogoUrl?: string;
+    strategyType: string;
+    parameters: Record<string, any>;
+    incentiveSplits: {
+      lp: number;
+      verifier: number;
+      yieldYoda: number;
+    };
+    maturityPeriodDays: number;
+    claimToken: {
+      name: string;
+      symbol: string;
+    };
+    creatorMetadata?: Record<string, any>;
+    creatorAddress: string;
+  }) {
+    try {
+      // Generate a temporary farm ID for the initial record
+      const tempFarmId = `temp-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      
+      // Create a complete farm data object with empty addresses that will be filled later
+      const farmData: ICreateFarmData = {
+        farmName: data.farmName,
+        farmDescription: data.farmDescription,
+        farmOwner: data.creatorAddress,
+        farmAddress: "", // Empty string, will be updated later
+        poolAddress: "", // Empty string, will be updated later
+        farmId: tempFarmId, // Temporary ID, will be updated later
+        principalAssetAddress: "", // Empty string, will be updated later
+        strategyType: data.strategyType,
+        strategyContractAddress: "", // Empty string, will be updated later
+        parameters: data.parameters,
+        incentiveSplits: data.incentiveSplits,
+        maturityPeriodDays: data.maturityPeriodDays,
+        claimToken: data.claimToken,
+        creatorAddress: data.creatorAddress
+      };
+
+      console.log('Storing initial farm data in MongoDB:', {
+        farmName: farmData.farmName,
+        tempFarmId: farmData.farmId
+      });
+      
+      // Store the farm data in MongoDB
+      const result = await MongoFarmService.createFarm(farmData);
+      
+      if (result) {
+        // Cast result to IFarm to access _id property with the correct type
+        const farm = result as IFarm & { _id: mongoose.Types.ObjectId };
+        console.log('Initial farm data stored successfully in MongoDB with ID:', farm._id);
+        return { success: true, mongoId: farm._id.toString() };
+      } else {
+        console.log('Farm already exists in MongoDB, skipped creation');
+        return { success: false, message: 'Duplicate farm entry' };
+      }
+    } catch (error) {
+      console.error('Error storing initial farm data in MongoDB:', error);
+      return { success: false, message: (error as Error).message };
+    }
+  }
+
+  /**
+   * Update farm data with strategy and principal asset addresses
+   * @param mongoId - MongoDB document ID
+   * @param principalAssetAddress - Principal asset address
+   * @param strategyContractAddress - Strategy contract address
+   * @param farmAddress - Deployed farm contract address
+   * @param poolAddress - Associated pool address
+   * @param farmId - Unique identifier for the farm
+   * @returns Promise that resolves with success status
+   */
+  static async updateFarmAddresses(
+    mongoId: string,
+    principalAssetAddress: string,
+    strategyContractAddress: string,
+    farmAddress: string,
+    poolAddress: string,
+    farmId: string
+  ) {
+    try {
+      // Find the farm by MongoDB ID and update it
+      const result = await Farm.findByIdAndUpdate(
+        mongoId,
+        {
+          $set: {
+            principalAssetAddress,
+            strategyContractAddress,
+            farmAddress,
+            poolAddress,
+            farmId
+          }
+        },
+        { new: true } // Return the updated document
+      );
+
+      if (result) {
+        console.log('Farm addresses updated successfully in MongoDB');
+        return { success: true };
+      } else {
+        console.log('Farm not found in MongoDB');
+        return { success: false, message: 'Farm not found' };
+      }
+    } catch (error) {
+      console.error('Error updating farm addresses in MongoDB:', error);
+      return { success: false, message: (error as Error).message };
+    }
+  }
+
   /**
    * Store farm deployment data in MongoDB
    * @param farmRequest - The farm request object from the main application
