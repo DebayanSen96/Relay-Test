@@ -4,6 +4,7 @@ import { FarmRequest, FarmRequestStatus, StrategyType } from '../models/FarmRequ
 import { BlockchainService } from './BlockchainService';
 import { IPFSService } from './IPFSService';
 import { ContractDeployer } from '../contracts/deploy/ContractDeployer';
+import { MongoFarmDataService } from './MongoFarmService';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -158,6 +159,14 @@ export class FarmService {
         deployedAt: new Date().toISOString(),
         transactionHash: 'tx_hash_placeholder' // In a real implementation, we would store the transaction hash
       };
+      
+      // Save farm data to MongoDB with the expanded schema
+      await MongoFarmDataService.storeFarmDeployment(
+        farmRequest,
+        farmAddr,
+        poolAddr,
+        farmId
+      );
       
       return await this.farmRequestRepository.save(farmRequest);
     } catch (error) {

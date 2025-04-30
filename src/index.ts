@@ -5,6 +5,7 @@ import { connectDatabase } from './config/database';
 import { initFarmRoutes } from './routes/farmRoutes';
 import { ContractDeployer } from './contracts/deploy/ContractDeployer';
 import { DataSource } from 'typeorm';
+import { connectToDatabase } from './db/connection';
 
 // Load environment variables
 dotenv.config();
@@ -14,9 +15,16 @@ const PORT = process.env.PORT || 3000;
 const startServer = async (): Promise<void> => {
   try {
     console.log('Starting server initialization...');
-    console.log('Connecting to database...');
+    
+    // Connect to PostgreSQL database
+    console.log('Connecting to PostgreSQL database...');
     const dataSource: DataSource = await connectDatabase();
-    console.log('Database connected successfully');
+    console.log('PostgreSQL database connected successfully');
+    
+    // Connect to MongoDB database
+    console.log('Connecting to MongoDB database...');
+    await connectToDatabase();
+    console.log('MongoDB database connected successfully');
 
     console.log('Deploying smart contracts...');
     const contractDeployer = new ContractDeployer();

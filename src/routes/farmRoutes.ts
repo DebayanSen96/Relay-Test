@@ -3,6 +3,8 @@ import { FarmController } from '../controllers/FarmController';
 import { validateFarmRequest, validateDeployFarm } from '../middlewares/validation';
 import { DataSource } from 'typeorm';
 import { handleValidationErrors } from '../middlewares/handleValidation'; // Import the handler
+import { MongoFarmDataService } from '../services/MongoFarmService';
+import { Request, Response } from 'express';
 
 // This function will be called when the database connection is established
 export const initFarmRoutes = (dataSource: DataSource) => {
@@ -21,6 +23,83 @@ export const initFarmRoutes = (dataSource: DataSource) => {
   
   // Get farm request details
   router.get('/requests/:requestId', /* Add validation if needed */ handleValidationErrors, farmController.getFarmRequest);
+  
+  // MongoDB specific endpoints
+  // Get all farms from MongoDB
+  router.get('/mongo/farms', async (req: Request, res: Response) => {
+    try {
+      const farms = await MongoFarmDataService.getAllFarms();
+      res.status(200).json({
+        status: 'success',
+        count: farms.length,
+        data: farms
+      });
+    } catch (error) {
+      console.error('Error getting all farms from MongoDB:', error);
+      res.status(500).json({
+        error: (error as Error).message || 'Internal server error'
+      });
+    }
+  });
+  
+  // Get farms by owner from MongoDB
+  router.get('/mongo/farms/owner/:ownerAddress', async (req: Request, res: Response) => {
+    try {
+      const { ownerAddress } = req.params;
+      
+      if (!ownerAddress) {
+        res.status(400).json({
+          error: 'Owner address is required'
+        });
+        return;
+      }
+
+      const farms = await MongoFarmDataService.getFarmsByOwner(ownerAddress);
+      res.status(200).json({
+        status: 'success',
+        count: farms.length,
+        data: farms
+      });
+    } catch (error) {
+      console.error('Error getting farms by owner from MongoDB:', error);
+      res.status(500).json({
+        error: (error as Error).message || 'Internal server error'
+      });
+    }
+  });
+  
+  // Get farm by address from MongoDB
+  router.get('/mongo/farms/address/:farmAddress', async (req: Request, res: Response) => {
+    try {
+      const { farmAddress } = req.params;
+      
+      if (!farmAddress) {
+        res.status(400).json({
+          error: 'Farm address is required'
+        });
+        return;
+      }
+
+      const farm = await MongoFarmDataService.getFarmByAddress(farmAddress);
+      
+      if (!farm) {
+        res.status(404).json({
+          error: `Farm with address ${farmAddress} not found`
+        });
+        return;
+      }
+
+      res.status(200).json({
+        status: 'success',
+        data: farm
+      });
+    } catch (error) {
+      console.error('Error getting farm by address from MongoDB:', error);
+      res.status(500).json({
+        error: (error as Error).message || 'Internal server error'
+      });
+    }
+  });
   
   // Add a health check endpoint
   router.get('/', (req, res) => {

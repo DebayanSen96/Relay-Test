@@ -9,6 +9,7 @@ const FarmRequest_1 = require("../models/FarmRequest");
 const BlockchainService_1 = require("./BlockchainService");
 const IPFSService_1 = require("./IPFSService");
 const ContractDeployer_1 = require("../contracts/deploy/ContractDeployer");
+const MongoFarmService_1 = require("./MongoFarmService");
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 class FarmService {
@@ -102,6 +103,8 @@ class FarmService {
                 deployedAt: new Date().toISOString(),
                 transactionHash: 'tx_hash_placeholder' // In a real implementation, we would store the transaction hash
             };
+            // Save farm data to MongoDB with the expanded schema
+            await MongoFarmService_1.MongoFarmDataService.storeFarmDeployment(farmRequest, farmAddr, poolAddr, farmId);
             return await this.farmRequestRepository.save(farmRequest);
         }
         catch (error) {
