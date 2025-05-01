@@ -68,6 +68,35 @@ export const initFarmRoutes = (dataSource: DataSource) => {
     }
   });
   
+  // Get farms by wallet address
+  router.get('/wallet/:walletAddress', async (req: Request, res: Response) => {
+    try {
+      const { walletAddress } = req.params;
+      
+      if (!walletAddress) {
+        res.status(400).json({
+          status: 'failed',
+          message: 'Wallet address is required'
+        });
+        return;
+      }
+
+      // Get farms from MongoDB
+      const farms = await MongoFarmDataService.getFarmsByOwner(walletAddress);
+      res.status(200).json({
+        status: 'success',
+        count: farms.length,
+        data: farms
+      });
+    } catch (error) {
+      console.error('Error getting farms by wallet address:', error);
+      res.status(500).json({
+        status: 'failed',
+        message: (error as Error).message || 'Internal server error'
+      });
+    }
+  });
+
   // Get farm by address from MongoDB
   router.get('/mongo/farms/address/:farmAddress', async (req: Request, res: Response) => {
     try {
