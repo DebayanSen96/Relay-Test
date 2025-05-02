@@ -2,6 +2,7 @@ import { FarmService as MongoFarmService, ICreateFarmData } from '../db/services
 import { Farm, IFarm } from '../db/models/Farm';
 import mongoose from 'mongoose';
 import { FarmRequest } from '../models/FarmRequest';
+import { FarmService } from '../services/FarmService';
 
 /**
  * Service for handling MongoDB farm-related operations
@@ -73,6 +74,83 @@ export class MongoFarmDataService {
       }
     } catch (error) {
       console.error('Error storing initial farm data in MongoDB:', error);
+      return { success: false, message: (error as Error).message };
+    }
+  }
+
+  /**
+   * Deploy a farm using MongoDB document ID
+   * @param mongoId - MongoDB document ID
+   * @param principalAssetAddress - Principal asset address
+   * @param strategyContractAddress - Strategy contract address
+   * @param dataSource - TypeORM data source for database access
+   * @returns Promise that resolves with the deployed farm details
+   */
+  static async deployFarmWithMongoId(
+    mongoId: string,
+    principalAssetAddress: string,
+    strategyContractAddress: string,
+    dataSource: any
+  ) {
+    try {
+      // 1. Get the farm data from MongoDB
+      const farmData = await Farm.findById(mongoId);
+      if (!farmData) {
+        return { success: false, message: 'Farm data not found' };
+      }
+
+      // 2. Update the farm data with the provided addresses
+      const updateResult = await this.updateFarmAddresses(
+        mongoId,
+        principalAssetAddress,
+        strategyContractAddress,
+        "", // farmAddress will be set during deployment
+        "", // poolAddress will be set during deployment
+        "" // farmId will be set during deployment
+      );
+
+      if (!updateResult.success) {
+        return { success: false, message: updateResult.message || 'Failed to update farm addresses' };
+      }
+
+      // 3. Create a FarmRequest object to use with the existing deployment logic
+      const farmService = new FarmService(dataSource);
+      
+      // 4. Create a farm request in the main database
+      const farmRequest = await farmService.createFarmRequest({
+        farmName: farmData.farmName,
+        farmDescription: farmData.farmDescription,
+        principalAssetAddress: principalAssetAddress,
+        strategyType: farmData.strategyType as any,
+        strategyContractAddress: strategyContractAddress,
+        parameters: farmData.parameters,
+        incentiveSplits: farmData.incentiveSplits,
+        maturityPeriodDays: farmData.maturityPeriodDays,
+        claimToken: farmData.claimToken,
+        creatorAddress: farmData.creatorAddress
+      });
+
+      // 5. Deploy the farm using the request ID
+      const deployedFarm = await farmService.deployFarm(farmRequest.id);
+
+      // 6. Update the MongoDB document with the deployed farm details
+      await this.updateFarmAddresses(
+        mongoId,
+        principalAssetAddress,
+        strategyContractAddress,
+        deployedFarm.farmAddress || "",
+        deployedFarm.poolAddress || "",
+        deployedFarm.farmId || ""
+      );
+
+      return {
+        success: true,
+        farmId: deployedFarm.farmId,
+        farmAddress: deployedFarm.farmAddress,
+        poolAddress: deployedFarm.poolAddress
+      };
+    } catch (error) {
+      console.error('Error deploying farm with MongoDB ID:', error);
       return { success: false, message: (error as Error).message };
     }
   }

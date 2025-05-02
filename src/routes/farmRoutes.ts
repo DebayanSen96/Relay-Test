@@ -5,6 +5,9 @@ import { DataSource } from 'typeorm';
 import { handleValidationErrors } from '../middlewares/handleValidation'; // Import the handler
 import { MongoFarmDataService } from '../services/MongoFarmService';
 import { Request, Response } from 'express';
+import { Farm, IFarm } from '../db/models/Farm';
+import { FarmRequest, StrategyType } from '../models/FarmRequest';
+import { FarmService } from '../services/FarmService';
 
 // This function will be called when the database connection is established
 export const initFarmRoutes = (dataSource: DataSource) => {
@@ -18,8 +21,61 @@ export const initFarmRoutes = (dataSource: DataSource) => {
   // Create a new farm request
   router.post('/requests', validateFarmRequest, handleValidationErrors, farmController.createFarmRequest);
   
-  // Deploy a farm
+  // Deploy a farm using request ID (legacy)
   router.get('/deploy/:requestId', /* Add validation if needed */ handleValidationErrors, farmController.deployFarm);
+  
+  // Deploy a farm using MongoDB ID
+  router.post('/:mongoId', async (req: Request, res: Response) => {
+    try {
+      const { mongoId } = req.params;
+      const { principalAssetAddress, strategyContractAddress } = req.body;
+      
+      if (!mongoId) {
+        res.status(400).json({
+          status: 'failed',
+          message: 'MongoDB ID is required'
+        });
+        return;
+      }
+
+      if (!principalAssetAddress || !strategyContractAddress) {
+        res.status(400).json({
+          status: 'failed',
+          message: 'principalAssetAddress and strategyContractAddress are required'
+        });
+        return;
+      }
+
+      // Deploy the farm using the MongoDB ID and the provided addresses
+      const result = await MongoFarmDataService.deployFarmWithMongoId(
+        mongoId,
+        principalAssetAddress,
+        strategyContractAddress,
+        dataSource
+      );
+
+      if (!result.success) {
+        res.status(400).json({
+          status: 'failed',
+          message: result.message || 'Failed to deploy farm'
+        });
+        return;
+      }
+
+      res.status(200).json({
+        status: 'success',
+        farmId: result.farmId,
+        farmAddress: result.farmAddress,
+        poolAddress: result.poolAddress
+      });
+    } catch (error) {
+      console.error('Error deploying farm:', error);
+      res.status(500).json({
+        status: 'failed',
+        message: (error as Error).message || 'Internal server error'
+      });
+    }
+  });
   
   // Get farm request details
   router.get('/requests/:requestId', /* Add validation if needed */ handleValidationErrors, farmController.getFarmRequest);
