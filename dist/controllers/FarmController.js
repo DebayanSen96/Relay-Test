@@ -15,13 +15,14 @@ class FarmController {
                     res.status(400).json({ errors: errors.array() });
                     return;
                 }
-                // Extract creator address from authentication
-                // In a real implementation, this would come from JWT or wallet signature
-                const creatorAddress = req.headers['x-creator-address'];
+                // Get creator address from the request body
+                const creatorAddress = req.body.creatorAddress;
+                // If not provided, return an error
                 if (!creatorAddress) {
-                    res.status(401).json({ error: 'Authentication required' });
+                    res.status(400).json({ error: 'Creator address is required in the request body' });
                     return;
                 }
+                console.log('Using creator address from request body:', creatorAddress);
                 // Create farm request in the main database (PostgreSQL)
                 // Extract only the fields we need, excluding principalAssetAddress and strategyContractAddress
                 const farmRequest = await this.farmService.createFarmRequest({
