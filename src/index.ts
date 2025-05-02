@@ -16,10 +16,10 @@ const startServer = async (): Promise<void> => {
   try {
     console.log('Starting server initialization...');
     
-    // Connect to PostgreSQL database
-    console.log('Connecting to PostgreSQL database...');
+    // Connect to TypeORM data source (in-memory or PostgreSQL)
+    console.log('Initializing TypeORM data source...');
     const dataSource: DataSource = await connectDatabase();
-    console.log('PostgreSQL database connected successfully');
+    console.log('TypeORM data source initialized successfully');
     
     // Connect to MongoDB database
     console.log('Connecting to MongoDB database...');

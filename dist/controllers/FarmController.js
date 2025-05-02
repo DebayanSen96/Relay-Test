@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.FarmController = void 0;
 const FarmService_1 = require("../services/FarmService");
 const express_validator_1 = require("express-validator");
+const MongoFarmService_1 = require("../services/MongoFarmService");
 class FarmController {
     constructor(dataSource) {
         this.createFarmRequest = async (req, res) => {
@@ -21,15 +22,39 @@ class FarmController {
                     res.status(401).json({ error: 'Authentication required' });
                     return;
                 }
-                // Create farm request
+                // Create farm request in the main database (PostgreSQL)
+                // Extract only the fields we need, excluding principalAssetAddress and strategyContractAddress
                 const farmRequest = await this.farmService.createFarmRequest({
-                    ...req.body,
+                    farmName: req.body.farmName,
+                    farmDescription: req.body.farmDescription,
+                    farmLogoUrl: req.body.farmLogoUrl,
+                    strategyType: req.body.strategyType,
+                    parameters: req.body.parameters,
+                    incentiveSplits: req.body.incentiveSplits,
+                    maturityPeriodDays: req.body.maturityPeriodDays,
+                    claimToken: req.body.claimToken,
+                    creatorMetadata: req.body.creatorMetadata,
                     creatorAddress
                 });
+                // Store initial farm data in MongoDB without principalAssetAddress and strategyContractAddress
+                const mongoResult = await MongoFarmService_1.MongoFarmDataService.storeInitialFarmData({
+                    farmName: req.body.farmName,
+                    farmDescription: req.body.farmDescription,
+                    farmLogoUrl: req.body.farmLogoUrl,
+                    strategyType: req.body.strategyType,
+                    parameters: req.body.parameters,
+                    incentiveSplits: req.body.incentiveSplits,
+                    maturityPeriodDays: req.body.maturityPeriodDays,
+                    claimToken: req.body.claimToken,
+                    creatorMetadata: req.body.creatorMetadata,
+                    creatorAddress: creatorAddress
+                });
                 console.log('[CONTROLLER] Responding with requestId:', farmRequest.id, 'and status:', farmRequest.status);
+                // Return only the MongoDB ID, status, and message
                 res.status(201).json({
-                    requestId: farmRequest.id,
-                    status: farmRequest.status
+                    mongoId: mongoResult.success ? mongoResult.mongoId : null,
+                    status: mongoResult.success ? 'success' : 'failed',
+                    message: mongoResult.success ? 'Farm data stored in MongoDB' : mongoResult.message
                 });
             }
             catch (error) {

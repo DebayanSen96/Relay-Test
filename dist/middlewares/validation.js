@@ -12,17 +12,9 @@ exports.validateFarmRequest = [
         .isString()
         .notEmpty()
         .withMessage('Farm description is required'),
-    (0, express_validator_1.body)('principalAssetAddress')
-        .isString()
-        .matches(/^0x[a-fA-F0-9]{40}$/)
-        .withMessage('Valid principal asset address is required'),
     (0, express_validator_1.body)('strategyType')
         .isIn(Object.values(FarmRequest_1.StrategyType))
         .withMessage('Valid strategy type is required'),
-    (0, express_validator_1.body)('strategyContractAddress')
-        .optional({ nullable: true })
-        .matches(/^0x[a-fA-F0-9]{40}$/)
-        .withMessage('Strategy contract address must be a valid Ethereum address'),
     (0, express_validator_1.body)('parameters')
         .isObject()
         .withMessage('Parameters must be an object'),

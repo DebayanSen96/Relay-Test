@@ -8,13 +8,14 @@ const typeorm_1 = require("typeorm");
 const FarmRequest_1 = require("../models/FarmRequest");
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
-// Check if we're in test mode (no database required)
-const isTestMode = process.env.NODE_ENV === 'test';
+// For development and testing, we use an in-memory repository
+// This avoids the need for a PostgreSQL database during development
+const useInMemoryRepository = true; // Set to false if you want to use a real PostgreSQL database
 const memoryStore = new Map();
 const connectDatabase = async () => {
     try {
-        if (isTestMode) {
-            console.log('Running in test mode - using in-memory repository');
+        if (useInMemoryRepository) {
+            console.log('Using in-memory repository - no PostgreSQL required');
             return {
                 getRepository: () => ({
                     async findOneBy(criteria) {
@@ -44,8 +45,8 @@ const connectDatabase = async () => {
     }
     catch (error) {
         console.error('Database connection failed:', error);
-        if (isTestMode) {
-            console.log('Continuing in test mode - using in-memory repository');
+        if (useInMemoryRepository) {
+            console.log('Continuing with in-memory repository - no PostgreSQL required');
             return {
                 getRepository: () => ({
                     async findOneBy(criteria) {

@@ -8,13 +8,13 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const dotenv_1 = __importDefault(require("dotenv"));
 // Load environment variables
 dotenv_1.default.config();
-// MongoDB connection string
-const username = 'Debayan';
-const password = 'Deba9774';
-const dbName = 'Farm';
-const uri = `mongodb+srv://${username}:${password}@cluster0.izsnuqx.mongodb.net/${dbName}?retryWrites=true&w=majority&appName=Cluster0`;
-// For production, it's better to use environment variables
-// const uri = process.env.MONGODB_URI || '';
+// MongoDB connection string using environment variables
+const username = process.env.MONGODB_USERNAME || '';
+const password = process.env.MONGODB_PASSWORD || '';
+const dbName = process.env.MONGODB_DATABASE || 'Farm';
+const cluster = process.env.MONGODB_CLUSTER || 'cluster0.izsnuqx.mongodb.net';
+// Construct the MongoDB URI
+const uri = `mongodb+srv://${username}:${password}@${cluster}/${dbName}?retryWrites=true&w=majority&appName=Cluster0`;
 /**
  * Connect to MongoDB
  */

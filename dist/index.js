@@ -16,10 +16,10 @@ const PORT = process.env.PORT || 3000;
 const startServer = async () => {
     try {
         console.log('Starting server initialization...');
-        // Connect to PostgreSQL database
-        console.log('Connecting to PostgreSQL database...');
+        // Connect to TypeORM data source (in-memory or PostgreSQL)
+        console.log('Initializing TypeORM data source...');
         const dataSource = await (0, database_1.connectDatabase)();
-        console.log('PostgreSQL database connected successfully');
+        console.log('TypeORM data source initialized successfully');
         // Connect to MongoDB database
         console.log('Connecting to MongoDB database...');
         await (0, connection_1.connectToDatabase)();

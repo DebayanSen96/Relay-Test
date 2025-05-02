@@ -117,17 +117,32 @@ export class MongoFarmDataService {
       const farmService = new FarmService(dataSource);
       
       // 4. Create a farm request in the main database
+      // Log the data we're using to create the farm request
+      console.log('Creating farm request with data:', {
+        farmName: farmData.farmName,
+        strategyType: farmData.strategyType,
+        principalAssetAddress,
+        strategyContractAddress
+      });
+      
       const farmRequest = await farmService.createFarmRequest({
         farmName: farmData.farmName,
         farmDescription: farmData.farmDescription,
         principalAssetAddress: principalAssetAddress,
         strategyType: farmData.strategyType as any,
-        strategyContractAddress: strategyContractAddress,
+        strategyContractAddress: strategyContractAddress, // This should be the provided address
         parameters: farmData.parameters,
         incentiveSplits: farmData.incentiveSplits,
         maturityPeriodDays: farmData.maturityPeriodDays,
         claimToken: farmData.claimToken,
         creatorAddress: farmData.creatorAddress
+      });
+      
+      // Log the created farm request to verify the strategy contract address is set
+      console.log('Created farm request:', {
+        id: farmRequest.id,
+        strategyType: farmRequest.strategyType,
+        strategyContractAddress: farmRequest.strategyContractAddress
       });
 
       // 5. Deploy the farm using the request ID

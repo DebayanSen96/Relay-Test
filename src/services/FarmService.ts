@@ -60,9 +60,9 @@ export class FarmService {
     farmRequest.farmName = data.farmName;
     farmRequest.farmDescription = data.farmDescription;
     farmRequest.farmLogoUrl = data.farmLogoUrl || null;
-    farmRequest.principalAssetAddress = ""; // Initialize with empty string, will be set later
+    farmRequest.principalAssetAddress = data.principalAssetAddress || ""; // Use provided address or empty string
     farmRequest.strategyType = data.strategyType;
-    farmRequest.strategyContractAddress = ""; // Initialize with empty string, will be set later
+    farmRequest.strategyContractAddress = data.strategyContractAddress || ""; // Use provided address or empty string
     farmRequest.parameters = data.parameters;
     farmRequest.incentiveSplits = data.incentiveSplits;
     farmRequest.maturityPeriodDays = data.maturityPeriodDays;

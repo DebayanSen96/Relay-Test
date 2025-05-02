@@ -15,8 +15,51 @@ const initFarmRoutes = (dataSource) => {
     router.post('/', validation_1.validateFarmRequest, handleValidation_1.handleValidationErrors, farmController.createFarmRequest);
     // Create a new farm request
     router.post('/requests', validation_1.validateFarmRequest, handleValidation_1.handleValidationErrors, farmController.createFarmRequest);
-    // Deploy a farm
+    // Deploy a farm using request ID (legacy)
     router.get('/deploy/:requestId', /* Add validation if needed */ handleValidation_1.handleValidationErrors, farmController.deployFarm);
+    // Deploy a farm using MongoDB ID
+    router.post('/:mongoId', async (req, res) => {
+        try {
+            const { mongoId } = req.params;
+            const { principalAssetAddress, strategyContractAddress } = req.body;
+            if (!mongoId) {
+                res.status(400).json({
+                    status: 'failed',
+                    message: 'MongoDB ID is required'
+                });
+                return;
+            }
+            if (!principalAssetAddress || !strategyContractAddress) {
+                res.status(400).json({
+                    status: 'failed',
+                    message: 'principalAssetAddress and strategyContractAddress are required'
+                });
+                return;
+            }
+            // Deploy the farm using the MongoDB ID and the provided addresses
+            const result = await MongoFarmService_1.MongoFarmDataService.deployFarmWithMongoId(mongoId, principalAssetAddress, strategyContractAddress, dataSource);
+            if (!result.success) {
+                res.status(400).json({
+                    status: 'failed',
+                    message: result.message || 'Failed to deploy farm'
+                });
+                return;
+            }
+            res.status(200).json({
+                status: 'success',
+                farmId: result.farmId,
+                farmAddress: result.farmAddress,
+                poolAddress: result.poolAddress
+            });
+        }
+        catch (error) {
+            console.error('Error deploying farm:', error);
+            res.status(500).json({
+                status: 'failed',
+                message: error.message || 'Internal server error'
+            });
+        }
+    });
     // Get farm request details
     router.get('/requests/:requestId', /* Add validation if needed */ handleValidation_1.handleValidationErrors, farmController.getFarmRequest);
     // MongoDB specific endpoints
@@ -58,6 +101,33 @@ const initFarmRoutes = (dataSource) => {
             console.error('Error getting farms by owner from MongoDB:', error);
             res.status(500).json({
                 error: error.message || 'Internal server error'
+            });
+        }
+    });
+    // Get farms by wallet address
+    router.get('/wallet/:walletAddress', async (req, res) => {
+        try {
+            const { walletAddress } = req.params;
+            if (!walletAddress) {
+                res.status(400).json({
+                    status: 'failed',
+                    message: 'Wallet address is required'
+                });
+                return;
+            }
+            // Get farms from MongoDB
+            const farms = await MongoFarmService_1.MongoFarmDataService.getFarmsByOwner(walletAddress);
+            res.status(200).json({
+                status: 'success',
+                count: farms.length,
+                data: farms
+            });
+        }
+        catch (error) {
+            console.error('Error getting farms by wallet address:', error);
+            res.status(500).json({
+                status: 'failed',
+                message: error.message || 'Internal server error'
             });
         }
     });
