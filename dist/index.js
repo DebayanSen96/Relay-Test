@@ -9,15 +9,21 @@ const app_1 = __importDefault(require("./app"));
 const database_1 = require("./config/database");
 const farmRoutes_1 = require("./routes/farmRoutes");
 const ContractDeployer_1 = require("./contracts/deploy/ContractDeployer");
+const connection_1 = require("./db/connection");
 // Load environment variables
 dotenv_1.default.config();
 const PORT = process.env.PORT || 3000;
 const startServer = async () => {
     try {
         console.log('Starting server initialization...');
-        console.log('Connecting to database...');
+        // Connect to TypeORM data source (in-memory or PostgreSQL)
+        console.log('Initializing TypeORM data source...');
         const dataSource = await (0, database_1.connectDatabase)();
-        console.log('Database connected successfully');
+        console.log('TypeORM data source initialized successfully');
+        // Connect to MongoDB database
+        console.log('Connecting to MongoDB database...');
+        await (0, connection_1.connectToDatabase)();
+        console.log('MongoDB database connected successfully');
         console.log('Deploying smart contracts...');
         const contractDeployer = new ContractDeployer_1.ContractDeployer();
         const deployedContracts = await contractDeployer.deployAllContracts();

@@ -4,14 +4,15 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Check if we're in test mode (no database required)
-const isTestMode = process.env.NODE_ENV === 'test';
+// For development and testing, we use an in-memory repository
+// This avoids the need for a PostgreSQL database during development
+const useInMemoryRepository = true; // Set to false if you want to use a real PostgreSQL database
 const memoryStore = new Map<string, any>();
 
 export const connectDatabase = async (): Promise<DataSource> => {
   try {
-    if (isTestMode) {
-      console.log('Running in test mode - using in-memory repository');
+    if (useInMemoryRepository) {
+      console.log('Using in-memory repository - no PostgreSQL required');
       return {
         getRepository: () => ({
           async findOneBy(criteria: { id: string }) {
@@ -42,8 +43,8 @@ export const connectDatabase = async (): Promise<DataSource> => {
     return dataSource;
   } catch (error) {
     console.error('Database connection failed:', error);
-    if (isTestMode) {
-      console.log('Continuing in test mode - using in-memory repository');
+    if (useInMemoryRepository) {
+      console.log('Continuing with in-memory repository - no PostgreSQL required');
       return {
         getRepository: () => ({
           async findOneBy(criteria: { id: string }) {

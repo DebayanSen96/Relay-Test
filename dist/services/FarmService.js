@@ -9,6 +9,7 @@ const FarmRequest_1 = require("../models/FarmRequest");
 const BlockchainService_1 = require("./BlockchainService");
 const IPFSService_1 = require("./IPFSService");
 const ContractDeployer_1 = require("../contracts/deploy/ContractDeployer");
+const MongoFarmService_1 = require("./MongoFarmService");
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 class FarmService {
@@ -34,9 +35,9 @@ class FarmService {
         farmRequest.farmName = data.farmName;
         farmRequest.farmDescription = data.farmDescription;
         farmRequest.farmLogoUrl = data.farmLogoUrl || null;
-        farmRequest.principalAssetAddress = data.principalAssetAddress;
+        farmRequest.principalAssetAddress = data.principalAssetAddress || ""; // Use provided address or empty string
         farmRequest.strategyType = data.strategyType;
-        farmRequest.strategyContractAddress = data.strategyContractAddress || null;
+        farmRequest.strategyContractAddress = data.strategyContractAddress || ""; // Use provided address or empty string
         farmRequest.parameters = data.parameters;
         farmRequest.incentiveSplits = data.incentiveSplits;
         farmRequest.maturityPeriodDays = data.maturityPeriodDays;
@@ -55,15 +56,12 @@ class FarmService {
         if (!farmRequest) {
             throw new Error(`Farm request with ID ${requestId} not found`);
         }
-        // Generate salt for deterministic deployment
         const salt = this.blockchainService.generateSalt(farmRequest.creatorAddress, farmRequest.id);
         farmRequest.salt = salt;
         await this.farmRequestRepository.save(farmRequest);
         try {
-            // Step 1: Determine the strategy address to use
             let strategyAddressToUse;
             if (farmRequest.strategyType !== FarmRequest_1.StrategyType.CUSTOM) {
-                // Deploy a new strategy contract
                 const deployedStrategyAddress = await this.blockchainService.deployStrategy(farmRequest.strategyType, farmRequest.principalAssetAddress, farmRequest.parameters);
                 strategyAddressToUse = deployedStrategyAddress;
                 farmRequest.strategyContractAddress = deployedStrategyAddress;
@@ -100,8 +98,10 @@ class FarmService {
             farmRequest.status = FarmRequest_1.FarmRequestStatus.READY;
             farmRequest.deploymentData = {
                 deployedAt: new Date().toISOString(),
-                transactionHash: 'tx_hash_placeholder' // In a real implementation, we would store the transaction hash
+                transactionHash: 'tx_hash_placeholder' // Dummy for now
             };
+            // Save farm data to MongoDB with the expanded schema
+            await MongoFarmService_1.MongoFarmDataService.storeFarmDeployment(farmRequest, farmAddr, poolAddr, farmId);
             return await this.farmRequestRepository.save(farmRequest);
         }
         catch (error) {
@@ -126,10 +126,8 @@ class FarmService {
         if (totalSplit !== 100) {
             throw new Error(`Incentive splits must sum to 100, got ${totalSplit}`);
         }
-        // Validate strategy type and address
-        if (data.strategyType === FarmRequest_1.StrategyType.CUSTOM && !data.strategyContractAddress) {
-            throw new Error('Custom strategy type requires a strategy contract address');
-        }
+        // Strategy validation will be done in a later step
+        // We've removed the validation for strategy contract address as it will be set later
         // Additional validations can be added here based on specific requirements
     }
 }

@@ -3,6 +3,7 @@ import { FarmService } from '../services/FarmService';
 import { StrategyType } from '../models/FarmRequest';
 import { validationResult } from 'express-validator';
 import { DataSource } from 'typeorm';
+import { MongoFarmDataService } from '../services/MongoFarmService';
 
 export class FarmController {
   private farmService: FarmService;
@@ -29,16 +30,42 @@ export class FarmController {
         return;
       }
 
-      // Create farm request
+      // Create farm request in the main database (PostgreSQL)
+      // Extract only the fields we need, excluding principalAssetAddress and strategyContractAddress
       const farmRequest = await this.farmService.createFarmRequest({
-        ...req.body,
+        farmName: req.body.farmName,
+        farmDescription: req.body.farmDescription,
+        farmLogoUrl: req.body.farmLogoUrl,
+        strategyType: req.body.strategyType,
+        parameters: req.body.parameters,
+        incentiveSplits: req.body.incentiveSplits,
+        maturityPeriodDays: req.body.maturityPeriodDays,
+        claimToken: req.body.claimToken,
+        creatorMetadata: req.body.creatorMetadata,
         creatorAddress
       });
 
+      // Store initial farm data in MongoDB without principalAssetAddress and strategyContractAddress
+      const mongoResult = await MongoFarmDataService.storeInitialFarmData({
+        farmName: req.body.farmName,
+        farmDescription: req.body.farmDescription,
+        farmLogoUrl: req.body.farmLogoUrl,
+        strategyType: req.body.strategyType,
+        parameters: req.body.parameters,
+        incentiveSplits: req.body.incentiveSplits,
+        maturityPeriodDays: req.body.maturityPeriodDays,
+        claimToken: req.body.claimToken,
+        creatorMetadata: req.body.creatorMetadata,
+        creatorAddress: creatorAddress
+      });
+
       console.log('[CONTROLLER] Responding with requestId:', farmRequest.id, 'and status:', farmRequest.status);
+      
+      // Return only the MongoDB ID, status, and message
       res.status(201).json({
-        requestId: farmRequest.id,
-        status: farmRequest.status
+        mongoId: mongoResult.success ? mongoResult.mongoId : null,
+        status: mongoResult.success ? 'success' : 'failed',
+        message: mongoResult.success ? 'Farm data stored in MongoDB' : mongoResult.message
       });
     } catch (error) {
       console.error('Error creating farm request:', error);
