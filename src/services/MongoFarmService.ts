@@ -32,10 +32,32 @@ export class MongoFarmDataService {
     };
     creatorMetadata?: Record<string, any>;
     creatorAddress: string;
+    network?: string;
   }) {
     try {
       // Generate a temporary farm ID for the initial record
       const tempFarmId = `temp-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      
+      // Determine the image_url based on the network value
+      let image_url = "";
+      if (data.network) {
+        switch(data.network.toLowerCase()) {
+          case "ethereum":
+            image_url = "/images/logos/eth.svg";
+            break;
+          case "solana":
+            image_url = "/images/logos/solana.svg";
+            break;
+          case "base":
+            image_url = "/images/logos/base.svg";
+            break;
+          case "bittensor":
+            image_url = "/images/logos/tao.svg";
+            break;
+          default:
+            image_url = "";
+        }
+      }
       
       // Create a complete farm data object with empty addresses that will be filled later
       const farmData: ICreateFarmData = {
@@ -52,7 +74,9 @@ export class MongoFarmDataService {
         incentiveSplits: data.incentiveSplits,
         maturityPeriodDays: data.maturityPeriodDays,
         claimToken: data.claimToken,
-        creatorAddress: data.creatorAddress
+        creatorAddress: data.creatorAddress,
+        network: data.network,
+        image_url: image_url
       };
 
       console.log('Storing initial farm data in MongoDB:', {
@@ -235,6 +259,27 @@ export class MongoFarmDataService {
     farmId: string
   ): Promise<void> {
     try {
+      // Determine the image_url based on the network value if present
+      let image_url = "";
+      if (farmRequest.network) {
+        switch(farmRequest.network.toLowerCase()) {
+          case "ethereum":
+            image_url = "/images/logos/eth.svg";
+            break;
+          case "solana":
+            image_url = "/images/logos/solana.svg";
+            break;
+          case "base":
+            image_url = "/images/logos/base.svg";
+            break;
+          case "bittensor":
+            image_url = "/images/logos/tao.svg";
+            break;
+          default:
+            image_url = "";
+        }
+      }
+      
       // Create a complete farm data object from the farm request
       const farmData: ICreateFarmData = {
         farmName: farmRequest.farmName,
@@ -250,7 +295,9 @@ export class MongoFarmDataService {
         incentiveSplits: farmRequest.incentiveSplits,
         maturityPeriodDays: farmRequest.maturityPeriodDays,
         claimToken: farmRequest.claimToken,
-        creatorAddress: farmRequest.creatorAddress
+        creatorAddress: farmRequest.creatorAddress,
+        network: farmRequest.network || undefined,
+        image_url: image_url
       };
 
       console.log('Storing farm deployment data in MongoDB:', {

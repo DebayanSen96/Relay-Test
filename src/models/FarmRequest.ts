@@ -66,6 +66,9 @@ export class FarmRequest {
   creatorAddress!: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
+  network: string | null = null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
   metadataIpfsHash: string | null = null;
 
   @Column({ type: 'enum', enum: FarmRequestStatus, default: FarmRequestStatus.PENDING_DEPLOYMENT })

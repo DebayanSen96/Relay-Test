@@ -25,6 +25,8 @@ export interface ICreateFarmData {
     symbol: string;
   };
   creatorAddress: string;
+  network?: string;
+  image_url?: string;
 }
 
 /**
