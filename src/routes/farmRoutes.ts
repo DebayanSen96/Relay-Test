@@ -18,12 +18,6 @@ export const initFarmRoutes = (dataSource: DataSource) => {
   // Root endpoint for testing
   router.post('/', validateFarmRequest, handleValidationErrors, farmController.createFarmRequest);
   
-  // Create a new farm request
-  router.post('/requests', validateFarmRequest, handleValidationErrors, farmController.createFarmRequest);
-  
-  // Deploy a farm using request ID (legacy)
-  router.get('/deploy/:requestId', /* Add validation if needed */ handleValidationErrors, farmController.deployFarm);
-  
   // Deploy a farm using MongoDB ID
   router.post('/:mongoId', async (req: Request, res: Response) => {
     try {
@@ -77,12 +71,9 @@ export const initFarmRoutes = (dataSource: DataSource) => {
     }
   });
   
-  // Get farm request details
-  router.get('/requests/:requestId', /* Add validation if needed */ handleValidationErrors, farmController.getFarmRequest);
-  
   // MongoDB specific endpoints
   // Get all farms from MongoDB
-  router.get('/mongo/farms', async (req: Request, res: Response) => {
+  router.get('/all_farms', async (req: Request, res: Response) => {
     try {
       const farms = await MongoFarmDataService.getAllFarms();
       res.status(200).json({
@@ -92,32 +83,6 @@ export const initFarmRoutes = (dataSource: DataSource) => {
       });
     } catch (error) {
       console.error('Error getting all farms from MongoDB:', error);
-      res.status(500).json({
-        error: (error as Error).message || 'Internal server error'
-      });
-    }
-  });
-  
-  // Get farms by owner from MongoDB
-  router.get('/mongo/farms/owner/:ownerAddress', async (req: Request, res: Response) => {
-    try {
-      const { ownerAddress } = req.params;
-      
-      if (!ownerAddress) {
-        res.status(400).json({
-          error: 'Owner address is required'
-        });
-        return;
-      }
-
-      const farms = await MongoFarmDataService.getFarmsByOwner(ownerAddress);
-      res.status(200).json({
-        status: 'success',
-        count: farms.length,
-        data: farms
-      });
-    } catch (error) {
-      console.error('Error getting farms by owner from MongoDB:', error);
       res.status(500).json({
         error: (error as Error).message || 'Internal server error'
       });
