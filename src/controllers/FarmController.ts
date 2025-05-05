@@ -59,7 +59,8 @@ export class FarmController {
         maturityPeriodDays: req.body.maturityPeriodDays,
         claimToken: req.body.claimToken,
         creatorMetadata: req.body.creatorMetadata,
-        creatorAddress: creatorAddress
+        creatorAddress: creatorAddress,
+        network: req.body.network // Pass the network field from the request
       });
 
       console.log('[CONTROLLER] Responding with requestId:', farmRequest.id, 'and status:', farmRequest.status);

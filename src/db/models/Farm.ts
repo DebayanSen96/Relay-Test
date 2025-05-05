@@ -34,6 +34,8 @@ export interface IFarm extends Document {
   maturityPeriodDays: number;          // Maturity period in days
   claimToken: IClaimToken;             // Claim token details
   creatorAddress: string;              // Address of the creator
+  network?: string;                    // Blockchain network (ethereum, solana, base, bittensor)
+  image_url?: string;                  // URL for the network logo image
   createdAt: Date;                     // When the farm was deployed
   updatedAt: Date;                     // When the farm was last updated
 }
@@ -120,6 +122,14 @@ const FarmSchema: Schema = new Schema(
     creatorAddress: {
       type: String,
       required: true,
+    },
+    network: {
+      type: String,
+      required: false,
+    },
+    image_url: {
+      type: String,
+      required: false,
     },
   },
   {
