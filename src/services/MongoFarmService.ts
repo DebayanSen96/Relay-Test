@@ -100,13 +100,16 @@ export class MongoFarmDataService {
       }
 
       // 2. Update the farm data with the provided addresses
+      // Generate a temporary unique farmId to avoid duplicate key errors
+      const tempFarmId = `temp-deploy-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      
       const updateResult = await this.updateFarmAddresses(
         mongoId,
         principalAssetAddress,
         strategyContractAddress,
         "", // farmAddress will be set during deployment
         "", // poolAddress will be set during deployment
-        "" // farmId will be set during deployment
+        tempFarmId // Use a temporary farmId to avoid duplicate key errors
       );
 
       if (!updateResult.success) {
