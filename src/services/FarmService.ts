@@ -78,7 +78,7 @@ export class FarmService {
     return saved;
   }
 
-  async deployFarm(requestId: string, skipMongoStore: boolean = false): Promise<FarmRequest> {
+  async deployFarm(requestId: string): Promise<FarmRequest> {
     const farmRequest = await this.farmRequestRepository.findOneBy({ id: requestId });
 
     if (!farmRequest) {
@@ -160,18 +160,13 @@ export class FarmService {
         transactionHash: 'tx_hash_placeholder' // Dummy for now
       };
       
-      // Save farm data to MongoDB with the expanded schema only if not skipped
-      if (!skipMongoStore) {
-        console.log('Storing farm deployment in MongoDB...');
-        await MongoFarmDataService.storeFarmDeployment(
-          farmRequest,
-          farmAddr,
-          poolAddr,
-          farmId
-        );
-      } else {
-        console.log('Skipping MongoDB storage as requested by caller');
-      }
+      // Save farm data to MongoDB with the expanded schema
+      await MongoFarmDataService.storeFarmDeployment(
+        farmRequest,
+        farmAddr,
+        poolAddr,
+        farmId
+      );
       
       return await this.farmRequestRepository.save(farmRequest);
     } catch (error) {
