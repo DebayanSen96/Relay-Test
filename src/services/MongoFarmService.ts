@@ -172,8 +172,8 @@ export class MongoFarmDataService {
         strategyContractAddress: farmRequest.strategyContractAddress
       });
 
-      // 5. Deploy the farm using the request ID
-      const deployedFarm = await farmService.deployFarm(farmRequest.id);
+      // 5. Deploy the farm using the request ID and pass the mongoId to avoid duplicate entries
+      const deployedFarm = await farmService.deployFarm(farmRequest.id, mongoId);
 
       // 6. Update the MongoDB document with the deployed farm details
       await this.updateFarmAddresses(
@@ -256,7 +256,8 @@ export class MongoFarmDataService {
     farmRequest: FarmRequest,
     farmAddress: string,
     poolAddress: string,
-    farmId: string
+    farmId: string,
+    mongoId?: string // Optional MongoDB ID to update an existing farm
   ): Promise<void> {
     try {
       // Determine the image_url based on the network value if present
@@ -303,16 +304,43 @@ export class MongoFarmDataService {
       console.log('Storing farm deployment data in MongoDB:', {
         farmName: farmData.farmName,
         farmId: farmData.farmId,
-        farmAddress: farmData.farmAddress
+        farmAddress: farmData.farmAddress,
+        updateExisting: !!mongoId
       });
       
-      // Store the farm data in MongoDB, checking for duplicates
-      const result = await MongoFarmService.createFarm(farmData);
-      
-      if (result) {
-        console.log('Farm deployment data stored successfully in MongoDB');
+      // If mongoId is provided, update the existing farm instead of creating a new one
+      if (mongoId) {
+        // Update the existing farm with the new data
+        const updateResult = await Farm.findByIdAndUpdate(
+          mongoId,
+          {
+            $set: {
+              farmAddress,
+              poolAddress,
+              farmId,
+              principalAssetAddress: farmRequest.principalAssetAddress,
+              strategyContractAddress: farmRequest.strategyContractAddress || undefined,
+              network: farmRequest.network || undefined,
+              image_url: image_url
+            }
+          },
+          { new: true } // Return the updated document
+        );
+
+        if (updateResult) {
+          console.log('Farm deployment data updated successfully in MongoDB');
+        } else {
+          console.log('Farm not found in MongoDB, update failed');
+        }
       } else {
-        console.log('Farm already exists in MongoDB, skipped creation');
+        // Store the farm data in MongoDB as a new document, checking for duplicates
+        const result = await MongoFarmService.createFarm(farmData);
+        
+        if (result) {
+          console.log('Farm deployment data stored successfully in MongoDB as a new document');
+        } else {
+          console.log('Farm already exists in MongoDB, skipped creation');
+        }
       }
     } catch (error) {
       console.error('Error storing farm deployment data in MongoDB:', error);
