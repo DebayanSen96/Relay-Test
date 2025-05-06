@@ -78,7 +78,7 @@ export class FarmService {
     return saved;
   }
 
-  async deployFarm(requestId: string): Promise<FarmRequest> {
+  async deployFarm(requestId: string, mongoId?: string): Promise<FarmRequest> {
     const farmRequest = await this.farmRequestRepository.findOneBy({ id: requestId });
 
     if (!farmRequest) {
@@ -161,11 +161,13 @@ export class FarmService {
       };
       
       // Save farm data to MongoDB with the expanded schema
+      // If mongoId is provided, update the existing document instead of creating a new one
       await MongoFarmDataService.storeFarmDeployment(
         farmRequest,
         farmAddr,
         poolAddr,
-        farmId
+        farmId,
+        mongoId // Pass the mongoId if available to update existing document
       );
       
       return await this.farmRequestRepository.save(farmRequest);

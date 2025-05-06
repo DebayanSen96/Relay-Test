@@ -163,7 +163,6 @@ export class MongoFarmDataService {
         maturityPeriodDays: farmData.maturityPeriodDays,
         claimToken: farmData.claimToken,
         creatorAddress: farmData.creatorAddress
-        // Note: network field is handled separately in MongoDB
       });
       
       // Log the created farm request to verify the strategy contract address is set
@@ -173,39 +172,25 @@ export class MongoFarmDataService {
         strategyContractAddress: farmRequest.strategyContractAddress
       });
 
-      // 5. Store a reference to the original method to prevent duplicate creation
-      const originalStoreFarmDeployment = MongoFarmDataService.storeFarmDeployment;
-      
-      try {
-        // Temporarily override the storeFarmDeployment method to prevent duplicate creation
-        MongoFarmDataService.storeFarmDeployment = async () => {
-          console.log('Skipping storeFarmDeployment to avoid duplicate entries');
-          // Do nothing, we'll update the existing document ourselves
-        };
-        
-        // Deploy the farm
-        const deployedFarm = await farmService.deployFarm(farmRequest.id);
-        
-        // 6. Update the MongoDB document with the deployed farm details
-        await this.updateFarmAddresses(
-          mongoId,
-          principalAssetAddress,
-          strategyContractAddress,
-          deployedFarm.farmAddress || "",
-          deployedFarm.poolAddress || "",
-          deployedFarm.farmId || ""
-        );
-        
-        return {
-          success: true,
-          farmId: deployedFarm.farmId,
-          farmAddress: deployedFarm.farmAddress,
-          poolAddress: deployedFarm.poolAddress
-        };
-      } finally {
-        // Restore the original method
-        MongoFarmDataService.storeFarmDeployment = originalStoreFarmDeployment;
-      }
+      // 5. Deploy the farm using the request ID and pass the mongoId to avoid duplicate entries
+      const deployedFarm = await farmService.deployFarm(farmRequest.id, mongoId);
+
+      // 6. Update the MongoDB document with the deployed farm details
+      await this.updateFarmAddresses(
+        mongoId,
+        principalAssetAddress,
+        strategyContractAddress,
+        deployedFarm.farmAddress || "",
+        deployedFarm.poolAddress || "",
+        deployedFarm.farmId || ""
+      );
+
+      return {
+        success: true,
+        farmId: deployedFarm.farmId,
+        farmAddress: deployedFarm.farmAddress,
+        poolAddress: deployedFarm.poolAddress
+      };
     } catch (error) {
       console.error('Error deploying farm with MongoDB ID:', error);
       return { success: false, message: (error as Error).message };
@@ -271,7 +256,8 @@ export class MongoFarmDataService {
     farmRequest: FarmRequest,
     farmAddress: string,
     poolAddress: string,
-    farmId: string
+    farmId: string,
+    mongoId?: string // Optional MongoDB ID to update an existing farm
   ): Promise<void> {
     try {
       // Determine the image_url based on the network value if present
@@ -315,58 +301,43 @@ export class MongoFarmDataService {
         image_url: image_url
       };
 
-      console.log('Checking for existing farm in MongoDB:', {
+      console.log('Storing farm deployment data in MongoDB:', {
         farmName: farmData.farmName,
-        creatorAddress: farmData.creatorAddress
+        farmId: farmData.farmId,
+        farmAddress: farmData.farmAddress,
+        updateExisting: !!mongoId
       });
       
-      // Try to find an existing farm with the same name and creator address
-      // or with a temporary farmId that starts with 'temp-'
-      const existingFarm = await Farm.findOne({
-        $and: [
-          { farmName: farmData.farmName },
-          { creatorAddress: farmData.creatorAddress },
-          { farmId: { $regex: /^temp-/ } }
-        ]
-      });
-      
-      if (existingFarm) {
+      // If mongoId is provided, update the existing farm instead of creating a new one
+      if (mongoId) {
         // Update the existing farm with the new data
-        console.log('Found existing farm, updating with deployment data:', {
-          _id: existingFarm._id,
-          farmName: existingFarm.farmName,
-          oldFarmId: existingFarm.farmId,
-          newFarmId: farmId
-        });
-        
         const updateResult = await Farm.findByIdAndUpdate(
-          existingFarm._id,
+          mongoId,
           {
             $set: {
-              farmAddress: farmAddress,
-              poolAddress: poolAddress,
-              farmId: farmId,
+              farmAddress,
+              poolAddress,
+              farmId,
               principalAssetAddress: farmRequest.principalAssetAddress,
               strategyContractAddress: farmRequest.strategyContractAddress || undefined,
               network: farmRequest.network || undefined,
               image_url: image_url
             }
           },
-          { new: true }
+          { new: true } // Return the updated document
         );
-        
+
         if (updateResult) {
           console.log('Farm deployment data updated successfully in MongoDB');
         } else {
-          console.log('Failed to update farm in MongoDB');
+          console.log('Farm not found in MongoDB, update failed');
         }
       } else {
-        // If no existing farm is found, create a new one
-        console.log('No existing farm found, creating new farm record');
+        // Store the farm data in MongoDB as a new document, checking for duplicates
         const result = await MongoFarmService.createFarm(farmData);
         
         if (result) {
-          console.log('Farm deployment data stored successfully in MongoDB');
+          console.log('Farm deployment data stored successfully in MongoDB as a new document');
         } else {
           console.log('Farm already exists in MongoDB, skipped creation');
         }
