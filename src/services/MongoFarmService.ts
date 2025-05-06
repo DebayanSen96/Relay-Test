@@ -172,10 +172,12 @@ export class MongoFarmDataService {
         strategyContractAddress: farmRequest.strategyContractAddress
       });
 
-      // 5. Deploy the farm using the request ID
-      const deployedFarm = await farmService.deployFarm(farmRequest.id);
+      // 5. Deploy the farm using the request ID, but prevent duplicate creation
+      // We'll modify the FarmService.deployFarm method to pass a flag to avoid creating a duplicate
+      const deployedFarm = await farmService.deployFarm(farmRequest.id, true);
 
       // 6. Update the MongoDB document with the deployed farm details
+      // This is the only place we should update the MongoDB document
       await this.updateFarmAddresses(
         mongoId,
         principalAssetAddress,
@@ -306,13 +308,46 @@ export class MongoFarmDataService {
         farmAddress: farmData.farmAddress
       });
       
-      // Store the farm data in MongoDB, checking for duplicates
-      const result = await MongoFarmService.createFarm(farmData);
+      // First, try to find an existing farm with the same name and creator address
+      const existingFarm = await Farm.findOne({
+        farmName: farmData.farmName,
+        creatorAddress: farmData.creatorAddress
+      });
       
-      if (result) {
-        console.log('Farm deployment data stored successfully in MongoDB');
+      if (existingFarm) {
+        // Update the existing farm instead of creating a new one
+        console.log('Found existing farm with the same name and creator. Updating instead of creating new...');
+        
+        const updateResult = await Farm.findByIdAndUpdate(
+          existingFarm._id,
+          {
+            $set: {
+              farmAddress: farmData.farmAddress,
+              poolAddress: farmData.poolAddress,
+              farmId: farmData.farmId,
+              principalAssetAddress: farmData.principalAssetAddress,
+              strategyContractAddress: farmData.strategyContractAddress,
+              network: farmData.network,
+              image_url: farmData.image_url
+            }
+          },
+          { new: true }
+        );
+        
+        if (updateResult) {
+          console.log('Farm deployment data updated successfully in MongoDB');
+        } else {
+          console.log('Failed to update existing farm in MongoDB');
+        }
       } else {
-        console.log('Farm already exists in MongoDB, skipped creation');
+        // No existing farm found, create a new one
+        const result = await MongoFarmService.createFarm(farmData);
+        
+        if (result) {
+          console.log('Farm deployment data stored successfully in MongoDB');
+        } else {
+          console.log('Farm already exists in MongoDB, skipped creation');
+        }
       }
     } catch (error) {
       console.error('Error storing farm deployment data in MongoDB:', error);
