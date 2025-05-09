@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { FarmController } from '../controllers/FarmController';
+import { PoolController } from '../controllers/PoolController';
 import { validateFarmRequest, validateDeployFarm } from '../middlewares/validation';
 import { DataSource } from 'typeorm';
 import { handleValidationErrors } from '../middlewares/handleValidation'; // Import the handler
@@ -14,6 +15,7 @@ export const initFarmRoutes = (dataSource: DataSource) => {
   console.log('[ROUTES] initFarmRoutes called.'); // <-- Add log
   const router = Router();
   const farmController = new FarmController(dataSource);
+  const poolController = new PoolController();
   
   // Root endpoint for testing
   router.post('/', validateFarmRequest, handleValidationErrors, farmController.createFarmRequest);
@@ -155,6 +157,9 @@ export const initFarmRoutes = (dataSource: DataSource) => {
   router.get('/', (req, res) => {
     res.status(200).json({ status: 'ok', message: 'Farm API is running' });
   });
+  
+  // Pool stats endpoint
+  router.get('/pool/:poolAddress', poolController.getPoolStats);
   
   return router;
 };
